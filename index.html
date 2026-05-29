@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loops in Threads — Handmade Crochet Creations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&family=Philosopher:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --terra: #c1440e;
+            --terra-light: #e8651a;
+            --terra-pale: #f5e6dc;
+            --turmeric: #d4a017;
+            --indigo: #2b3a6b;
+            --indigo-light: #3d5299;
+            --cream: #fdf6ee;
+            --parchment: #f0e6d3;
+            --brown: #4a2c0a;
+            --brown-mid: #7a4e2d;
+            --muted: #9a7b5e;
+            --ink: #2c1a0e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            overflow-x: hidden;
+        }
+
+        /* BLOCK PRINT BORDER PATTERN — SVG inline as bg */
+        .block-border-top {
+            height: 18px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='18'%3E%3Crect x='0' y='6' width='40' height='6' fill='%23c1440e' opacity='0.18'/%3E%3Ccircle cx='10' cy='9' r='3.5' fill='none' stroke='%23c1440e' stroke-width='1.2' opacity='0.5'/%3E%3Ccircle cx='30' cy='9' r='3.5' fill='none' stroke='%23c1440e' stroke-width='1.2' opacity='0.5'/%3E%3Ccircle cx='10' cy='9' r='1.2' fill='%23c1440e' opacity='0.4'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='%23c1440e' opacity='0.4'/%3E%3Crect x='17' y='5' width='6' height='8' rx='1' fill='%23d4a017' opacity='0.35'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+        }
+        .block-border-bottom {
+            height: 18px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='18'%3E%3Crect x='0' y='6' width='40' height='6' fill='%23c1440e' opacity='0.18'/%3E%3Ccircle cx='10' cy='9' r='3.5' fill='none' stroke='%23c1440e' stroke-width='1.2' opacity='0.5'/%3E%3Ccircle cx='30' cy='9' r='3.5' fill='none' stroke='%23c1440e' stroke-width='1.2' opacity='0.5'/%3E%3Ccircle cx='10' cy='9' r='1.2' fill='%23c1440e' opacity='0.4'/%3E%3Ccircle cx='30' cy='9' r='1.2' fill='%23c1440e' opacity='0.4'/%3E%3Crect x='17' y='5' width='6' height='8' rx='1' fill='%23d4a017' opacity='0.35'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+            transform: scaleY(-1);
+        }
+
+        /* NAV */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+            background: var(--cream);
+            border-bottom: 1px solid rgba(193,68,14,0.2);
+            padding: 0 52px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 72px;
+            transition: box-shadow .3s;
+        }
+        nav.scrolled { box-shadow: 0 4px 24px rgba(74,44,10,0.1); }
+        .nav-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.55rem; font-weight: 700;
+            color: var(--terra); text-decoration: none;
+            letter-spacing: .5px; line-height: 1.1;
+        }
+        .nav-logo small {
+            display: block; font-size: .65rem;
+            font-family: 'Lato', sans-serif; font-weight: 400;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: var(--muted);
+        }
+        .nav-links { display: flex; align-items: center; gap: 36px; list-style: none; }
+        .nav-links a {
+            font-family: 'Lato', sans-serif; font-size: .8rem;
+            font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--brown-mid); text-decoration: none; transition: color .2s;
+        }
+        .nav-links a:hover { color: var(--terra); }
+        .nav-cta {
+            background: var(--terra) !important; color: white !important;
+            padding: 9px 22px !important; border-radius: 2px !important;
+            transition: background .2s !important;
+        }
+        .nav-cta:hover { background: var(--terra-light) !important; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+        .hamburger span { width: 24px; height: 1.5px; background: var(--brown); display: block; }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: grid; grid-template-columns: 1fr 1fr;
+            align-items: center;
+            padding-top: 72px;
+            background: var(--parchment);
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='1.2' fill='%23c1440e' opacity='0.12'/%3E%3Ccircle cx='0' cy='0' r='1.2' fill='%23c1440e' opacity='0.12'/%3E%3Ccircle cx='60' cy='0' r='1.2' fill='%23c1440e' opacity='0.12'/%3E%3Ccircle cx='0' cy='60' r='1.2' fill='%23c1440e' opacity='0.12'/%3E%3Ccircle cx='60' cy='60' r='1.2' fill='%23c1440e' opacity='0.12'/%3E%3C/svg%3E");
+        }
+        .hero-left {
+            padding: 80px 60px 80px 80px;
+            position: relative; z-index: 1;
+        }
+        .hero-tag {
+            display: inline-flex; align-items: center; gap: 10px;
+            font-family: 'Lato', sans-serif;
+            font-size: .72rem; font-weight: 700; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--terra);
+            margin-bottom: 28px;
+        }
+        .hero-tag::before, .hero-tag::after {
+            content: ''; width: 28px; height: 1px; background: var(--terra); opacity: .5;
+        }
+        .hero h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(3rem, 5.5vw, 5.2rem);
+            font-weight: 700; line-height: 1.1;
+            color: var(--ink); margin-bottom: 24px;
+        }
+        .hero h1 em {
+            font-style: italic; color: var(--terra);
+        }
+        .hero p {
+            font-size: 1.05rem; color: var(--brown-mid);
+            line-height: 1.85; font-weight: 300;
+            margin-bottom: 44px; max-width: 420px;
+        }
+        .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; }
+        .btn-primary {
+            background: var(--terra); color: white;
+            padding: 14px 36px; text-decoration: none;
+            font-family: 'Lato', sans-serif;
+            font-size: .8rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; border-radius: 2px;
+            border: 2px solid var(--terra);
+            transition: background .2s, color .2s;
+            display: inline-block;
+        }
+        .btn-primary:hover { background: transparent; color: var(--terra); }
+        .btn-secondary {
+            background: transparent; color: var(--brown);
+            padding: 14px 36px; text-decoration: none;
+            font-family: 'Lato', sans-serif;
+            font-size: .8rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; border-radius: 2px;
+            border: 2px solid var(--brown-mid);
+            transition: background .2s, border-color .2s, color .2s;
+            display: inline-block;
+        }
+        .btn-secondary:hover { border-color: var(--terra); color: var(--terra); }
+        .hero-right {
+            position: relative; z-index: 1;
+            height: 100vh; overflow: hidden;
+        }
+        .hero-right img {
+            width: 100%; height: 100%; object-fit: cover;
+            display: block;
+        }
+        .hero-right-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to right, var(--parchment) 0%, transparent 30%);
+        }
+        /* Decorative corner motif */
+        .corner-motif {
+            position: absolute; z-index: 2;
+            width: 80px; height: 80px;
+        }
+        .corner-motif.tl { top: 90px; left: 20px; }
+        .corner-motif.br { bottom: 20px; right: 20px; transform: rotate(180deg); }
+
+        /* MARQUEE STRIP */
+        .marquee-strip {
+            background: var(--indigo); overflow: hidden; padding: 12px 0;
+        }
+        .marquee-inner {
+            display: flex; white-space: nowrap;
+            animation: marquee 28s linear infinite;
+        }
+        .marquee-inner span {
+            font-family: 'Lato', sans-serif;
+            font-size: .72rem; font-weight: 700; letter-spacing: 4px;
+            text-transform: uppercase; color: rgba(255,255,255,0.75);
+            padding: 0 40px;
+        }
+        .marquee-inner span.dot { color: var(--turmeric); padding: 0 8px; letter-spacing: 0; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* SECTION GENERAL */
+        .section-eyebrow {
+            display: flex; align-items: center; justify-content: center; gap: 14px;
+            font-family: 'Lato', sans-serif;
+            font-size: .7rem; font-weight: 700; letter-spacing: 4px;
+            text-transform: uppercase; color: var(--terra);
+            margin-bottom: 16px;
+        }
+        .section-eyebrow::before, .section-eyebrow::after {
+            content: ''; width: 36px; height: 1px; background: var(--terra); opacity: .4;
+        }
+        .section-title-serif {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.2rem, 4vw, 3.5rem);
+            font-weight: 700; text-align: center; color: var(--ink);
+            line-height: 1.15;
+        }
+        .section-title-serif em { font-style: italic; color: var(--terra); }
+        .section-sub { text-align: center; color: var(--muted); margin-top: 12px; font-size: .95rem; font-weight: 300; }
+        .ornament {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin: 18px auto 0; color: var(--terra); opacity: .5;
+            font-size: 1rem; letter-spacing: 6px;
+        }
+        .ornament::before, .ornament::after { content: '❧'; }
+
+        /* PRODUCTS */
+        .products-section { padding: 100px 52px; background: var(--cream); }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 28px; max-width: 1120px; margin: 60px auto 0;
+        }
+        .product-card {
+            background: white;
+            border: 1px solid rgba(193,68,14,0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            transition: transform .35s, box-shadow .35s;
+        }
+        .product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(74,44,10,0.12); }
+        /* Block print corner decoration on cards */
+        .product-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: repeating-linear-gradient(90deg, var(--terra) 0px, var(--terra) 12px, var(--turmeric) 12px, var(--turmeric) 16px, transparent 16px, transparent 28px);
+        }
+        .product-badge {
+            position: absolute; top: 20px; right: 16px;
+            background: var(--indigo); color: white;
+            font-family: 'Lato', sans-serif;
+            font-size: .65rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; padding: 4px 12px; border-radius: 2px;
+        }
+        .product-img { width: 100%; height: 270px; object-fit: cover; display: block; transition: transform .5s; }
+        .product-card:hover .product-img { transform: scale(1.04); }
+        .product-info { padding: 22px 24px 24px; }
+        .product-info h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem; font-weight: 700; color: var(--ink); margin-bottom: 8px;
+        }
+        .product-info p { color: var(--muted); font-size: .85rem; line-height: 1.65; margin-bottom: 18px; font-weight: 300; }
+        .product-footer { display: flex; justify-content: space-between; align-items: center; }
+        .product-price {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem; font-weight: 700; color: var(--terra);
+        }
+        .btn-cart {
+            background: var(--terra); color: white; border: none;
+            padding: 9px 20px; border-radius: 2px; cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-size: .72rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase;
+            transition: background .2s;
+        }
+        .btn-cart:hover { background: var(--terra-light); }
+
+        /* ABOUT */
+        .about-section {
+            display: grid; grid-template-columns: 1fr 1fr;
+            background: var(--parchment);
+        }
+        .about-imgs {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+        }
+        .about-imgs img { width: 100%; height: 280px; object-fit: cover; display: block; }
+        .about-content {
+            padding: 80px 70px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .about-content .section-eyebrow { justify-content: flex-start; }
+        .about-content .section-eyebrow::before { display: none; }
+        .about-content h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 3.5vw, 3rem);
+            font-weight: 700; line-height: 1.15; margin-bottom: 24px;
+        }
+        .about-content h2 em { font-style: italic; color: var(--terra); }
+        .about-content p {
+            color: var(--brown-mid); font-size: .95rem; line-height: 1.9;
+            font-weight: 300; margin-bottom: 16px;
+        }
+        .about-stats {
+            display: flex; gap: 36px; margin-top: 32px;
+            padding-top: 28px;
+            border-top: 1px solid rgba(193,68,14,0.2);
+        }
+        .stat-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem; font-weight: 700; color: var(--terra); line-height: 1;
+        }
+        .stat-label {
+            font-family: 'Lato', sans-serif;
+            font-size: .65rem; font-weight: 700; letter-spacing: 2.5px;
+            text-transform: uppercase; color: var(--muted); margin-top: 6px;
+        }
+        .about-cta { margin-top: 32px; align-self: flex-start; }
+
+        /* TESTIMONIALS */
+        .testimonials-section { padding: 100px 52px; background: var(--cream); }
+        .testimonials-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 24px; max-width: 1100px; margin: 60px auto 0;
+        }
+        .testimonial-card {
+            background: white; border: 1px solid rgba(193,68,14,0.12);
+            border-radius: 4px; padding: 36px 32px; position: relative;
+        }
+        .testimonial-card::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+            background: repeating-linear-gradient(90deg, var(--turmeric) 0px, var(--turmeric) 12px, var(--terra) 12px, var(--terra) 16px, transparent 16px, transparent 28px);
+        }
+        .quote-icon {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 5rem; font-weight: 700; color: var(--terra);
+            opacity: .18; line-height: .8; margin-bottom: 12px;
+        }
+        .stars { color: var(--turmeric); font-size: 1rem; letter-spacing: 3px; margin-bottom: 16px; }
+        .testimonial-text {
+            font-family: 'Philosopher', serif;
+            font-size: .95rem; font-style: italic;
+            color: var(--brown-mid); line-height: 1.8; margin-bottom: 20px;
+        }
+        .testimonial-author {
+            font-family: 'Lato', sans-serif;
+            font-size: .72rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--terra);
+        }
+
+        /* CONTACT */
+        .contact-section {
+            background: var(--indigo); color: white;
+            padding: 100px 52px;
+        }
+        .contact-section .section-eyebrow { color: var(--turmeric); }
+        .contact-section .section-eyebrow::before, .contact-section .section-eyebrow::after { background: var(--turmeric); }
+        .contact-section .section-title-serif { color: white; }
+        .contact-section .section-title-serif em { color: var(--turmeric); }
+        .contact-section .section-sub { color: rgba(255,255,255,0.55); }
+        .contact-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 24px; max-width: 900px; margin: 56px auto 0;
+        }
+        .contact-card {
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 4px; padding: 40px 32px; text-align: center;
+            transition: background .3s, border-color .3s;
+        }
+        .contact-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(212,160,23,0.5); }
+        .contact-icon { font-size: 1.8rem; margin-bottom: 18px; }
+        .contact-card h4 {
+            font-family: 'Lato', sans-serif;
+            font-size: .7rem; font-weight: 700; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--turmeric); margin-bottom: 10px;
+        }
+        .contact-card a {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem; color: white; text-decoration: none;
+            border-bottom: 1px solid rgba(212,160,23,0.35);
+            transition: border-color .2s, color .2s;
+        }
+        .contact-card a:hover { color: var(--turmeric); border-color: var(--turmeric); }
+
+        /* FOOTER */
+        footer {
+            background: var(--ink); color: rgba(255,255,255,0.55);
+            padding: 48px 52px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 24px;
+        }
+        .footer-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem; font-weight: 700; color: white;
+        }
+        .footer-logo small {
+            display: block; font-size: .6rem;
+            font-family: 'Lato', sans-serif; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--muted);
+        }
+        .footer-links { display: flex; gap: 28px; }
+        .footer-links a {
+            font-size: .7rem; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.45); text-decoration: none; transition: color .2s;
+        }
+        .footer-links a:hover { color: var(--turmeric); }
+        .footer-copy { font-size: .75rem; }
+
+        /* TOAST */
+        .toast {
+            position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%) translateY(12px);
+            background: var(--indigo); color: white;
+            font-family: 'Lato', sans-serif;
+            font-size: .78rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; padding: 14px 28px;
+            border-left: 4px solid var(--turmeric);
+            border-radius: 2px; z-index: 999;
+            opacity: 0; transition: opacity .3s, transform .3s;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ANIMATIONS */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+        .reveal { opacity: 0; transform: translateY(32px); transition: opacity .75s ease, transform .75s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+        .hero-left > * { animation: fadeUp .8s ease both; }
+        .hero-left > *:nth-child(1) { animation-delay: .1s; }
+        .hero-left > *:nth-child(2) { animation-delay: .2s; }
+        .hero-left > *:nth-child(3) { animation-delay: .3s; }
+        .hero-left > *:nth-child(4) { animation-delay: .4s; }
+
+        /* MOBILE */
+        @media (max-width: 900px) {
+            nav { padding: 0 24px; }
+            .hamburger { display: flex; }
+            .nav-links { position: fixed; inset: 0; background: var(--cream); flex-direction: column; justify-content: center; align-items: center; gap: 28px; opacity: 0; pointer-events: none; transition: opacity .3s; }
+            .nav-links.open { opacity: 1; pointer-events: all; }
+            .hero { grid-template-columns: 1fr; }
+            .hero-right { height: 50vw; }
+            .hero-left { padding: 60px 28px 48px; }
+            .products-section, .testimonials-section, .contact-section { padding: 72px 24px; }
+            .about-section { grid-template-columns: 1fr; }
+            .about-content { padding: 52px 28px; }
+            .testimonials-grid, .contact-grid { grid-template-columns: 1fr; }
+            footer { flex-direction: column; text-align: center; padding: 40px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+    <a href="index.html" class="nav-logo">
+        Loops in Threads
+        <small>Handmade Crochet Creations</small>
+    </a>
+    <ul class="nav-links" id="navLinks">
+        <li><a href="#products">Shop</a></li>
+        <li><a href="#about">Our Story</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="login.html" class="nav-cta">Sign In</a></li>
+    </ul>
+    <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-left">
+        <div class="hero-tag">Handcrafted with Love</div>
+        <h1>Every stitch<br>tells a <em>story</em></h1>
+        <p>Discover one-of-a-kind crochet creations made entirely by hand — bags, dolls, tops, and keychains, each woven with care and intention.</p>
+        <div class="hero-ctas">
+            <a href="#products" class="btn-primary">Shop Collection</a>
+            <a href="#about" class="btn-secondary">Our Story</a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <img src="images/top.jpg" alt="Handmade crochet boho top">
+        <div class="hero-right-overlay"></div>
+    </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+    <div class="marquee-inner">
+        <span>100% Handmade</span><span class="dot">✦</span>
+        <span>No Machines Ever</span><span class="dot">✦</span>
+        <span>Made in India</span><span class="dot">✦</span>
+        <span>Custom Orders Welcome</span><span class="dot">✦</span>
+        <span>Ships Pan-India</span><span class="dot">✦</span>
+        <span>100% Handmade</span><span class="dot">✦</span>
+        <span>No Machines Ever</span><span class="dot">✦</span>
+        <span>Made in India</span><span class="dot">✦</span>
+        <span>Custom Orders Welcome</span><span class="dot">✦</span>
+        <span>Ships Pan-India</span><span class="dot">✦</span>
+    </div>
+</div>
+
+<!-- PRODUCTS -->
+<section class="products-section" id="products">
+    <div class="block-border-top"></div>
+    <div style="padding:0 0 60px;" class="reveal">
+        <div class="section-eyebrow">New Collection</div>
+        <h2 class="section-title-serif">Our <em>Creations</em></h2>
+        <p class="section-sub">Each item is lovingly crafted — no two are exactly alike.</p>
+        <div class="ornament">✦</div>
+    </div>
+    <div class="products-grid">
+        <div class="product-card reveal">
+            <span class="product-badge">Bestseller</span>
+            <img src="images/bag.jpg" alt="Crochet Character Bags" class="product-img">
+            <div class="product-info">
+                <h3>Crochet Character Bags</h3>
+                <p>Adorable Hello Kitty &amp; bunny-themed mini bags — perfect for gifting or daily use.</p>
+                <div class="product-footer">
+                    <span class="product-price">₹799</span>
+                    <button class="btn-cart" onclick="addToCart('Crochet Character Bags')">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+        <div class="product-card reveal">
+            <span class="product-badge">Popular</span>
+            <img src="images/top.jpg" alt="Crochet Boho Top" class="product-img">
+            <div class="product-info">
+                <h3>Crochet Boho Top</h3>
+                <p>Vibrant mandala-inspired halter top with fringe detailing — a summer must-have.</p>
+                <div class="product-footer">
+                    <span class="product-price">₹999</span>
+                    <button class="btn-cart" onclick="addToCart('Crochet Boho Top')">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+        <div class="product-card reveal">
+            <img src="images/doll.jpg" alt="Crochet Bunny Doll" class="product-img">
+            <div class="product-info">
+                <h3>Crochet Bunny Doll</h3>
+                <p>A sweet amigurumi bunny in a pink dress — a wonderful gift for kids and collectors.</p>
+                <div class="product-footer">
+                    <span class="product-price">₹499</span>
+                    <button class="btn-cart" onclick="addToCart('Crochet Bunny Doll')">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+        <div class="product-card reveal">
+            <span class="product-badge" style="background:var(--turmeric);color:var(--ink);">New</span>
+            <img src="images/keychain.jpg" alt="Crochet Chick Keychain" class="product-img">
+            <div class="product-info">
+                <h3>Crochet Chick Keychain</h3>
+                <p>Tiny and precious — this little chick keychain adds a handmade charm to your keys or bag.</p>
+                <div class="product-footer">
+                    <span class="product-price">₹249</span>
+                    <button class="btn-cart" onclick="addToCart('Crochet Chick Keychain')">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="block-border-bottom" style="margin-top:60px;"></div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+    <div class="about-imgs reveal">
+        <img src="images/bag.jpg" alt="Crochet bag">
+        <img src="images/doll.jpg" alt="Crochet doll">
+        <img src="images/keychain.jpg" alt="Keychain">
+        <img src="images/top.jpg" alt="Crochet top">
+    </div>
+    <div class="about-content reveal">
+        <div class="section-eyebrow">Our Story</div>
+        <h2>Born from a love of <em>yarn</em></h2>
+        <p>Loops in Threads was born from a simple love of yarn and the joy of creating something with your hands. Every bag, doll, top, and keychain is crocheted individually — no machines, no mass production.</p>
+        <p>We believe handmade is the most personal form of art. Each stitch carries intention, warmth, and care. When you hold one of our pieces, you're holding hours of love.</p>
+        <div class="about-stats">
+            <div>
+                <div class="stat-num">200+</div>
+                <div class="stat-label">Orders</div>
+            </div>
+            <div>
+                <div class="stat-num">15+</div>
+                <div class="stat-label">Designs</div>
+            </div>
+            <div>
+                <div class="stat-num">100%</div>
+                <div class="stat-label">Handmade</div>
+            </div>
+        </div>
+        <a href="signup.html" class="btn-primary about-cta" style="margin-top:32px;">Join Our Community</a>
+    </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials-section">
+    <div class="reveal">
+        <div class="section-eyebrow">Customers Say</div>
+        <h2 class="section-title-serif">Made with <em>love</em>, received with joy</h2>
+        <div class="ornament">✦</div>
+    </div>
+    <div class="testimonials-grid">
+        <div class="testimonial-card reveal">
+            <div class="quote-icon">"</div>
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">The crochet bag I ordered was even more beautiful in person. The quality is incredible and it shipped so fast!</p>
+            <div class="testimonial-author">— Priya M.</div>
+        </div>
+        <div class="testimonial-card reveal">
+            <div class="quote-icon">"</div>
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">Got the bunny doll for my daughter's birthday and she absolutely loves it. So soft and cute. Will order again!</p>
+            <div class="testimonial-author">— Anitha R.</div>
+        </div>
+        <div class="testimonial-card reveal">
+            <div class="quote-icon">"</div>
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">The boho top is stunning! Wore it to a beach trip and got so many compliments. Unique and stylish!</p>
+            <div class="testimonial-author">— Nandita K.</div>
+        </div>
+    </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+    <div class="block-border-top" style="opacity:.3; margin-bottom:0;"></div>
+    <div class="reveal" style="padding-top:20px;">
+        <div class="section-eyebrow">Get in Touch</div>
+        <h2 class="section-title-serif">We'd love to <em>hear</em> from you</h2>
+        <p class="section-sub">Custom orders, questions, or just to say hello!</p>
+    </div>
+    <div class="contact-grid">
+        <div class="contact-card reveal">
+            <div class="contact-icon">✉</div>
+            <h4>Email</h4>
+            <a href="mailto:loopsnthreadss@gmail.com">loopsnthreadss@gmail.com</a>
+        </div>
+        <div class="contact-card reveal">
+            <div class="contact-icon">◈</div>
+            <h4>Instagram</h4>
+            <a href="https://instagram.com/loopsnthreadss" target="_blank">@loopsnthreadss</a>
+        </div>
+        <div class="contact-card reveal">
+            <div class="contact-icon">✦</div>
+            <h4>Custom Orders</h4>
+            <a href="mailto:loopsnthreadss@gmail.com">DM us to order</a>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-logo">
+        Loops in Threads
+        <small>Handmade Crochet Creations</small>
+    </div>
+    <div class="footer-links">
+        <a href="#products">Shop</a>
+        <a href="#about">Story</a>
+        <a href="#contact">Contact</a>
+        <a href="login.html">Sign In</a>
+        <a href="signup.html">Join</a>
+    </div>
+    <div class="footer-copy">© 2026 Loops in Threads. All rights reserved.</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+    });
+    function toggleMenu() {
+        document.getElementById('navLinks').classList.toggle('open');
+    }
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+    function addToCart(name) {
+        const t = document.getElementById('toast');
+        t.textContent = `✦ "${name}" added to cart`;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+</script>
+</body>
+</html>
